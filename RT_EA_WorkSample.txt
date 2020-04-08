@@ -1,0 +1,349 @@
+# Initial code built by team for gaming company during second case
+
+library(tidyverse)
+library(skimr)
+library(tidymodels)
+library(fs)
+library(rpart)
+
+#read in merged data from all contact data
+Year_Data <- read.csv("/Users/RafaelTrevino/Desktop/contact_merge.csv")
+
+Player <- Year_Data %>% group_by(PLAYER_ID) %>% count() %>% filter(n <= 599 & n > 2)
+Player <- Player[order(-Player$n),]
+
+# #Add Persona Column
+# Player$Persona <- ""
+
+# Running through for all players
+for (id in Player$PLAYER_ID) {
+  DeepDive <- Year_Data %>% filter(PLAYER_ID == id)
+  
+  # Bad Actor (Resets to 0 for every id)
+  BadActor <- data.frame("Banned or suspended account" = 0, "Hacked account" = 0, "Account recovery" = 0, "Tips and tricks" = 0, 
+			 "Report player" = 0)
+  BadActorTotal <- ncol(BadActor)
+  BadActorCat = col.names=gsub("\\."," ",colnames(BadActor))
+  
+  # Average Joe Set Up (Resets to 0 for every id)
+  AverageJoe <- data.frame("Can't log in" = 0, "Delete account" = 0, "Hacked account"= 0, "Manage security settings" = 0, "Reset password" = 0,
+                           "Manage subscriptions" = 0, "Dispute charge" = 0, "Report payment error" = 0, "Cancel subscription" = 0,
+                           "Warranty status" = 0, "Update subscription" = 0, "Update payment method" = 0)
+  AverageJoeTotal <- ncol(AverageJoe)
+  AverageJoeCat = col.names=gsub("\\."," ",colnames(AverageJoe))
+  
+  # Rookie Set Up (Resets to 0 for every id)
+  Rookie <- data.frame("Game won't launch" = 0, "Manage account details" = 0, "Features"= 0, "Invalid code" = 0, "Order not received" = 0,
+                       "Installation" = 0, "Downloads" = 0, "Report player" = 0, "Game modes" = 0, "Promotion questions" = 0, 
+                       "Not Known" = 0, "Unable to purchase" = 0, "Lost code" = 0, "Manage payment details" = 0, "Getting started" = 0,
+                       "Check order status" = 0, "Report website" = 0, "Real-life threat" = 0, "Add subscription" = 0)
+  RookieTotal <- ncol(Rookie)
+  RookieCat = col.names=gsub("\\."," ",colnames(Rookie))
+  
+  # High Potential Set Up (Resets to 0 for every id)
+  HighPotential <- data.frame("Never received content" = 0, "Connectivity"= 0, "Account recovery" = 0, 
+                              "Game progress issues" = 0, "Request refund" = 0, "Transfer between accounts"= 0, 
+                              "Availability" = 0, "Restore account" = 0, "Find missing game" = 0, 
+                              "Replace lost draft token" = 0, "UNK" = 0, "Lost Draft Token due to disconnect" = 0, 
+                              "News" = 0, "Cancel preorder" = 0, "New Warranty Request" = 0, 
+                              "Request progress reset" = 0, "Replace lost Draft Token" = 0)
+  HighPotentialTotal <- ncol(HighPotential)
+  HighPotentialCat = col.names=gsub("\\."," ",colnames(HighPotential))
+  
+  # Above Average Joe Set Up (Resets to 0 for very id)
+  AboveAverageJoe <- data.frame("Had content and lost it" = 0, "Game performance" = 0, "Give feedback" = 0, 
+                                "Report bug" = 0, "Tips and tricks" = 0)
+  AboveAverageJoeTotal <- ncol(AboveAverageJoe)
+  AboveAverageJoeCat = col.names=gsub("\\."," ",colnames(AboveAverageJoe))
+  
+  # VIP Set Up (Resets to 0 for every id)
+  VIP <- data.frame("Check Weekend League access" = 0, "Patch notes" = 0)
+  VIPTotal <- ncol(VIP)
+  VIPCat = col.names=gsub("\\."," ",colnames(VIP))
+  
+  for(i in DeepDive$SUB_CATEGORY){
+    
+    #trying to automate the process
+    #eval(parse(text = paste("BadActor","$",gsub("\\ ",".",BadActorCat[count]),sep="")))
+    #
+    if (i == "Banned or suspended account"){
+      BadActor$Banned.or.suspended.account. <- 1
+    }
+    if (i == "Hacked account"){
+      BadActor$Hacked.account <- 1
+    }
+    if (i == "Account recovery"){
+      BadActor$Account.recovery <- 1
+    }
+    if (i == "Tips and tricks"){
+      BadActor$Tips.and.tricks <- 1
+    }
+    if (i == "Report player"){
+      BadActor$Report.player <- 1
+    }
+    if (i == "Can't log in"){
+      AverageJoe$Can.t.log.in <- 1
+    }
+    if (i == "Delete account"){
+      AverageJoe$Delete.account <- 1
+    }
+    if (i == "Manage security settings"){
+      AverageJoe$Manage.security.settings <- 1
+    }
+    if (i == "Reset password"){
+      AverageJoe$Reset.password <- 1
+    }
+    if (i == "Manage subscriptions"){
+      AverageJoe$Manage.subscriptions <- 1
+    }
+    if (i == "Dispute charge"){
+      AverageJoe$Dispute.charge <- 1
+    }
+    if (i == "Report payment error"){
+      AverageJoe$Report.payment.error <- 1
+    }
+    if (i == "Cancel subscription"){
+      AverageJoe$Cancel.subscription <- 1
+    }
+    if (i == "Warranty status"){
+      AverageJoe$Warranty.status <- 1
+    }
+    if (i == "Update subscription"){
+      AverageJoe$Update.subscription <- 1
+    }
+    if (i == "Update payment method"){
+      AverageJoe$Update.payment.method <- 1
+    }
+    if (i == "Game won't launch"){
+      Rookie$Game.won.t.launch <- 1
+    }  
+    if (i == "Manage account details"){
+      Rookie$Manage.account.details <- 1
+    }  
+    if (i == "Features"){
+      Rookie$Features <- 1
+    }  
+    if (i == "Invalid code"){
+      Rookie$Invalid.code <- 1
+    }  
+    if (i == "Order not received"){
+      Rookie$Order.not.received <- 1
+    }  
+    if (i == "Installation"){
+      Rookie$Installation <- 1
+    }  
+    if (i == "Downloads"){
+      Rookie$Downloads <- 1
+    } 
+    if (i == "Report player"){
+      Rookie$Report.player <- 1
+    } 
+    if (i == "Game modes"){
+      Rookie$Game.modes <- 1
+    }  
+    if (i == "Promotion questions"){
+      Rookie$Promotion.questions <- 1
+    }  
+    if (i == "Not Known"){
+      Rookie$Not.Known <- 1
+    }  
+    if (i == "Unable to purchase"){
+      Rookie$Unable.to.purchase <- 1
+    }  
+    if (i == "Lost code"){
+      Rookie$Lost.code <- 1
+    }  
+    if (i == "Manage payment details"){
+      Rookie$Manage.payment.details <- 1
+    }  
+    if (i == "Getting started"){
+      Rookie$Getting.started <- 1
+    }  
+    if (i == "Check order status"){
+      Rookie$Check.order.status <- 1
+    }  
+    if (i == "Report website"){
+      Rookie$Report.website <- 1
+    }  
+    if (i == "Real-life threat"){
+      Rookie$Real-life.threat <- 1
+    }  
+    if (i == "Add subscription"){
+      Rookie$Add.subscription <- 1
+    }  
+    if (i == "Never received content"){
+      HighPotential$Never.received.content <- 1
+    }
+    if (i == "Connectivity"){
+      HighPotential$Connectivity <- 1
+    }
+    if (i == "Account recovery"){
+      HighPotential$Account.recovery <- 1
+    }
+    if (i == "Game progress issues"){
+      HighPotential$Game.progress.issues <- 1
+    }
+    if (i == "Never received content"){
+      HighPotential$Never.received.content <- 1
+    }
+    if (i == "Request refund"){
+      HighPotential$Request.refund <- 1
+    }
+    if (i == "Transfer between accounts"){
+      HighPotential$Transfer.between.accounts <- 1
+    }
+    if (i == "Availability"){
+      HighPotential$Availability <- 1
+    }
+    if (i == "Restore account"){
+      HighPotential$Restore.account <- 1
+    }
+    if (i == "Find missing game"){
+      HighPotential$Find.missing.game <- 1
+    }
+    if (i == "Replace lost draft token"){
+      HighPotential$Replace.lost.draft.token <- 1
+    }
+    if (i == "UNK"){
+      HighPotential$UNK <- 1
+    }
+    if (i == "Lost Draft Token due to disconnect"){
+      HighPotential$Lost.Draft.Token.due.to.disconnect <- 1
+    }
+    if (i == "Find missing game"){
+      HighPotential$Find.missing.game <- 1
+    }
+    if (i == "News"){
+      HighPotential$News <- 1
+    }
+    if (i == "Cancel preorder"){
+      HighPotential$Cancel.preorder <- 1
+    }
+    if (i == "New Warranty Request"){
+      HighPotential$New.Warranty.Request <- 1
+    }
+    if (i == "Request progress reset"){
+      HighPotential$Request.progress.reset <- 1
+    }
+    if (i == "Replace lost Draft Token"){
+      HighPotential$Replace.lost.Draft.Token <- 1
+    }
+    if (i == "Had content and lost it"){
+      AboveAverageJoe$Had.content.and.lost.it <- 1
+    }
+    if (i == "Game performance"){
+      AboveAverageJoe$Game.performance <- 1
+    }
+    if (i == "Give feedback"){
+      AboveAverageJoe$Give.feedback <- 1
+    }
+    if (i == "Report bug"){
+      AboveAverageJoe$Report.bug <- 1
+    }
+    if (i == "Tips and tricks"){
+      AboveAverageJoe$Tips.and.tricks <- 1
+    }
+    if (i == "Check Weekend League access"){
+      VIP$Check.Weekend.League.access <- 1
+    }
+    if (i == "Patch notes"){
+      VIP$Patch.notes <- 1
+    }
+    #Add the rest of the subcategory if statements and the necessary impacts on different personas
+  }
+  pBadActor <- sum(BadActor)/BadActorTotal
+  pAverageJoe <- sum(AverageJoe)/AverageJoeTotal
+  pRookie <- sum(Rookie)/RookieTotal
+  pHighPotential <- sum(HighPotential)/HighPotentialTotal
+  pAboveAverageJoe <- sum(AboveAverageJoe)/AboveAverageJoeTotal
+  pVIP <- sum(VIP)/VIPTotal
+
+  if (max(pBadActor, pAverageJoe, pRookie, pHighPotential, pAboveAverageJoe, pVIP) == pBadActor){
+    Player$Persona[Player$PLAYER_ID == id] <- "Bad Actor"
+  }
+  if (max(pBadActor, pAverageJoe, pRookie, pHighPotential, pAboveAverageJoe, pVIP) == pAverageJoe){
+    Player$Persona[Player$PLAYER_ID == id] <- "Average Joe"
+  }
+  if (max(pBadActor, pAverageJoe, pRookie, pHighPotential, pAboveAverageJoe, pVIP) == pRookie){
+    Player$Persona[Player$PLAYER_ID == id] <- "Rookie"
+  }  
+  if (max(pBadActor, pAverageJoe, pRookie, pHighPotential, pAboveAverageJoe, pVIP) == pHighPotential){
+    Player$Persona[Player$PLAYER_ID == id] <- "High Potential"
+  }
+  if (max(pBadActor, pAverageJoe, pRookie, pHighPotential, pAboveAverageJoe, pVIP) == pAboveAverageJoe){
+    Player$Persona[Player$PLAYER_ID == id] <- "Above Average Joe"
+  }  
+  if (max(pBadActor, pAverageJoe, pRookie, pHighPotential, pAboveAverageJoe, pVIP) == pVIP){
+    Player$Persona[Player$PLAYER_ID == id] <- "VIP"
+  }
+  # FINISH REST OF PERSONAS Statements (Make sure to add them to prior if statements as needed)
+}
+
+
+# Ignore the general code below, but this breaks down which categories we believe should fit each persona.
+
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Banned or suspended account"] <-"Bad Actor"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Hacked account"] <-"Bad Actor"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Account recovery"] <-"Bad Actor"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Tips and tricks"] <-"Bad Actor"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Report player"] <-"Bad Actor"
+# 
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Can't log in"] <-"Average Joe"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Hacked account"] <-"Average Joe"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Delete account"] <-"Average Joe"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Manage security settings"] <-"Average Joe"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Reset password"] <-"Average Joe"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Manage subscriptions"] <-"Average Joe"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Dispute charge"] <-"Average Joe"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Report payment error"] <-"Average Joe"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Cancel subscription"] <-"Average Joe"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Warranty status"] <-"Average Joe"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Update subscription"] <-"Average Joe"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Update payment method"] <-"Average Joe"
+# 
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Game won't launch"] <-"Rookie"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Manage account details"] <-"Rookie"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Features"] <-"Rookie"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Invalid code"] <-"Rookie"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Order not received"] <-"Rookie"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Installation"] <-"Rookie"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Downloads"] <-"Rookie"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Report player"] <-"Rookie"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Game modes"] <-"Rookie"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Promotion questions"] <-"Rookie"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Not Known"] <-"Rookie"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Unable to purchase"] <-"Rookie"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Lost code"] <-"Rookie"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Manage payment details"] <-"Rookie"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Getting started"] <-"Rookie"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Check order status"] <-"Rookie"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Report website"] <-"Rookie"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Real-life threat"] <-"Rookie"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Add subscription"] <-"Rookie"
+# 
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Never received content"] <-"High Potential"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Connectivity"] <-"High Potential"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Account recovery"] <-"High Potential"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Game progress issues"] <-"High Potential"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Request refund"] <-"High Potential"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Transfer between accounts"] <-"High Potential"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Availability"] <-"High Potential"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Restore account"] <-"High Potential"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Find missing game"] <-"High Potential"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Replace lost draft token"] <-"High Potential"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "UNK"] <-"High Potential"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Lost Draft Token due to disconnect"] <-"High Potential"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "News"] <-"High Potential"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Cancel preorder"] <-"High Potential"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "New Warranty Request"] <-"High Potential"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Request progress reset"] <-"High Potential"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Replace lost Draft Token"] <-"High Potential"
+# 
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Had content and lost it"] <-"Above Average Joe"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Game performance"] <-"Above Average Joe"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Give feedback"] <-"Above Average Joe"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Report bug"] <-"Above Average Joe"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Tips and tricks"] <-"Above Average Joe"
+# 
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Check Weekend League access"] <-"VIP"
+# English_Contact$Persona[English_Contact$SUB_CATEGORY == "Patch notes"] <-"VIP"
